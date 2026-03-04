@@ -1,0 +1,20 @@
+Copyright © 2025 BlockFact. All rights reserved.
+
+PROPRIETARY LICENSE
+
+This specification and all associated documentation (the "Specification") are the proprietary and confidential property of BlockFact.
+
+PERMITTED USE:
+- You may read and reference this Specification for the purpose of understanding the .facti file format
+- You may implement software that reads, writes, or processes .facti files in accordance with this Specification
+- You may distribute software that implements this Specification
+
+RESTRICTIONS:
+- You may not modify, adapt, or create derivative works of this Specification without prior written permission from BlockFact
+- You may not remove or alter any copyright, trademark, or other proprietary notices from this Specification
+- You may not use the BlockFact name, logo, or trademarks without prior written permission
+
+DISCLAIMER:
+THIS SPECIFICATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL BLOCKFACT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THIS SPECIFICATION.
+
+For licensing inquiries or permissions, contact: support@blockfact.io
