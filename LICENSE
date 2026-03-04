@@ -1,20 +1,30 @@
-Copyright © 2025 BlockFact. All rights reserved.
+Creative Commons Attribution 4.0 International (CC BY 4.0)
 
-PROPRIETARY LICENSE
+Copyright (c) 2026 BlockFact
 
-This specification and all associated documentation (the "Specification") are the proprietary and confidential property of BlockFact.
+You are free to:
+- Share: copy and redistribute the material in any medium or format
+- Adapt: remix, transform, and build upon the material for any purpose, even commercially
 
-PERMITTED USE:
-- You may read and reference this Specification for the purpose of understanding the .facti file format
-- You may implement software that reads, writes, or processes .facti files in accordance with this Specification
-- You may distribute software that implements this Specification
+Under the following terms:
+- Attribution: You must give appropriate credit to BlockFact, provide a link to the license, 
+  and indicate if changes were made. You may do so in any reasonable manner, but not in any 
+  way that suggests BlockFact endorses you or your use.
 
-RESTRICTIONS:
-- You may not modify, adapt, or create derivative works of this Specification without prior written permission from BlockFact
-- You may not remove or alter any copyright, trademark, or other proprietary notices from this Specification
-- You may not use the BlockFact name, logo, or trademarks without prior written permission
+No additional restrictions: You may not apply legal terms or technological measures that 
+legally restrict others from doing anything the license permits.
 
-DISCLAIMER:
-THIS SPECIFICATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL BLOCKFACT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THIS SPECIFICATION.
+Full license text: https://creativecommons.org/licenses/by/4.0/legalcode
 
-For licensing inquiries or permissions, contact: support@blockfact.io
+---
+
+PATENT NOTICE:
+
+Implementation of this specification may require a patent license. This specification is 
+provided for informational purposes only and does not grant any patent rights.
+
+For companies with annual revenue exceeding $10 million USD, a commercial patent license 
+may be required to implement this specification.
+
+For patent licensing inquiries, contact: patents@blockfact.io
+Website: https://blockfact.io/patents
