@@ -1,215 +1,213 @@
-# BlockFact Image File Specification (.facti)
+# BlockFact Media File Specification (.facti / .facta / .factv)
 
-**Version:** 1.4  
-**Last Updated:** January 23, 2025
+**Version:** 2.0  
+**Last Updated:** May 11, 2026
 
 ---
 
 ## Overview
 
-The `.facti` file format is a proprietary image container developed by BlockFact. It wraps standard image formats (e.g., JPEG, PNG) and includes encrypted metadata for verification and integrity.
+The BlockFact family of media formats (`.facti`, `.facta`, `.factv`) are binary container formats designed for provenance-verified media. Each file wraps a standard media payload (JPEG, PNG, WAV, MP4, etc.) with cryptographic provenance data including:
 
-The format ensures secure and verifiable image distribution, leveraging blockchain technology to authenticate file integrity.
+- JSON metadata (GPS, timestamp, content hash, blockchain registration)
+- C2PA Content Credentials (JUMBF manifest)
+- Zero-knowledge proof data (reserved)
+- Steganographic watermark parameters (reserved)
 
-### Key Benefits
+The format is backward-compatible: v1 readers process the header + metadata + media payload and ignore extension blocks. v2 readers additionally parse typed extension blocks.
 
-- **Blockchain Verifiability**: Ties an image to a unique on-chain reference (blockchain-id)
-- **Encrypted Metadata**: Prevents unauthorized access to sensitive data
-- **Checksum**: Guards against image manipulation or corruption
-- **Lite & Full System Support**: Systems that only need to display the image can bypass metadata decryption (lite mode), while full systems decrypt and validate the metadata for authenticity verification
+### IANA Registrations
 
----
-
-## File Structure
-
-A `.facti` file consists of the following components:
-
-### 1. Magic Number
-Identifies `.facti` files uniquely.
-
-**Value:** `0xFA 0x49 0x01 0x00`
-
-### 2. Required Parameters
-
-- **version** (string, required): Specifies the `.facti` format version (e.g., `1.0`)
-
-### 3. Optional Parameters
-
-- **encryption** (string, optional): Specifies the encryption type for metadata (e.g., `AES256`)
-- **compression** (boolean, optional): Indicates whether the image content is compressed (`true`/`false`)
-
-### 4. Encrypted Metadata Block
-
-Contains required fields (`content-type`, `blockchain-id`, `checksum`, `encryption-key`) plus any additional fields.
-
-If encrypted, only clients with the appropriate decryption key can parse it. Metadata is typically stored on-chain, but an optional local copy may exist within the `.facti` file for offline verification.
-
-### 5. Image Content
-
-The raw binary of the wrapped image format (JPEG, PNG, etc.). Systems that only need the image can skip or ignore the metadata after reading its size.
+| Format | MIME Type | Registration |
+|--------|-----------|--------------|
+| `.facti` | `image/vnd.blockfact.facti` | https://www.iana.org/assignments/media-types/image/vnd.blockfact.facti |
+| `.facta` | `audio/vnd.blockfact.facta` | https://www.iana.org/assignments/media-types/audio/vnd.blockfact.facta |
+| `.factv` | `video/vnd.blockfact.factv` | https://www.iana.org/assignments/media-types/video/vnd.blockfact.factv |
 
 ---
 
-## Metadata Fields
+## Binary Format
 
-The `.facti` format may include an optional embedded metadata section that contains structured information. These fields are not media type parameters but are part of the `.facti` file structure itself.
+### Magic Bytes
 
-### Optional Internal Fields
+| Format | Magic Bytes (hex) |
+|--------|-------------------|
+| `.facti` | `FA 49 41 00` |
+| `.facta` | `FA 41 41 00` |
+| `.factv` | `FA 56 41 00` |
 
-- **author** (string, optional): The name or identifier of the image creator
-- **creation_date** (ISO 8601 string, optional): The timestamp when the image was created
-- **location** (object, optional): Geotagging data (latitude/longitude) if enabled
-- **tags** (array, optional): List of keywords or labels related to the image
-- **description** (string, optional): A textual description of the image
-
-**Note:** While metadata can be stored inside the `.facti` file, the blockchain-stored metadata is the authoritative source for verification. Systems should treat the local metadata copy as a convenience feature.
-
----
-
-## Encoding & Encryption
-
-The `.facti` file is binary-encoded, meaning readers must handle raw byte data to parse it correctly.
-
-### Encrypted Metadata
-
-The entire metadata block (N bytes) may be encrypted so unauthorized parties cannot read the fields.
-
-A parser that supports decryption will:
-
-1. Read the metadata block from the file
-2. Retrieve the correct key using `encryption-key`
-3. Decrypt to obtain the plaintext JSON/object
-4. Parse the fields (`blockchain-id`, `checksum`, etc.)
-
-### Symmetric Encryption (AES)
-
-AES (e.g., AES-256-GCM) is commonly used:
-
-1. Generate or retrieve an AES key
-2. Encrypt the metadata JSON using that key
-3. Store the ciphertext (and IV, if needed) in the `.facti` file
-4. The client uses the same key (obtained from a secure KMS) to decrypt
-
-### Asymmetric Encryption (RSA/ECC)
-
-Alternatively, encrypt with a public key so only the holder of the private key can decrypt:
-
-- The `.facti` file stores the ciphertext and a reference to the public/private key pair
-
----
-
-## Security & Verification
-
-- Metadata is encrypted for privacy and integrity
-- The blockchain-based system verifies file authenticity
-- The checksum ensures the wrapped image content has not been tampered with
-
----
-
-## Interoperability
-
-### Lite Systems
-Can read and extract the wrapped image without requiring decryption of metadata.
-
-### Full Systems
-Can decode both the image and metadata to verify file authenticity and retrieve associated metadata.
-
-### Blockchain Access
-Some verification features require a blockchain connection; offline-only systems may not fully validate `.facti` files.
-
----
-
-## Intended Use Cases
-
-The `.facti` format is ideal for applications requiring secure image distribution with verification capabilities, including:
-
-- Digital asset management
-- Blockchain-integrated content platforms
-- Secure document and media exchanges
-- Insurance claim verification
-- Real estate photo authentication
-- Journalism and news verification
-- Legal evidence documentation
-
----
-
-## Binary Format Details
+### File Layout
 
 ```
-Offset | Size (bytes) | Field
--------|--------------|------------------
-0x00   | 4            | Magic Number (0xFA 0x49 0x01 0x00)
-0x04   | 4            | Version (uint32, big-endian)
-0x08   | 32           | Reserved (32 bytes, zeros)
-0x28   | 4            | Metadata Length (uint32, big-endian)
-0x2C   | N            | Metadata Block (JSON, possibly encrypted)
-0x2C+N | Remaining    | Image Data (JPEG/PNG/etc.)
+┌──────────────────────────────────────────────────────────────┐
+│ [4 bytes]  Magic bytes                                        │
+│ [4 bytes]  Metadata length N (big-endian uint32)              │
+│ [N bytes]  JSON metadata (UTF-8)                              │
+│ [M bytes]  Media payload (JPEG, PNG, WAV, MP4, etc.)          │
+│ ─── v1 readers stop here ───                                  │
+│ [2 bytes]  Extension block count (big-endian uint16)          │
+│ For each extension block:                                     │
+│   [4 bytes]  Block type (4 ASCII bytes)                       │
+│   [4 bytes]  Block data length L (big-endian uint32)          │
+│   [L bytes]  Block data                                       │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### Parsing Example
+### Byte-Level Detail
 
-```javascript
-// Read magic number
-const magic = buffer.slice(0, 4)
-if (magic[0] !== 0xFA || magic[1] !== 0x49 || 
-    magic[2] !== 0x01 || magic[3] !== 0x00) {
-  throw new Error('Invalid .facti file')
+```
+Offset    Size      Field
+────────  ────────  ──────────────────────────────────────
+0x00      4         Magic bytes
+0x04      4         Metadata length N (big-endian uint32)
+0x08      N         JSON metadata (UTF-8 encoded)
+0x08+N    M         Media payload
+0x08+N+M  2         Extension block count (big-endian uint16)
+                    Repeated for each block:
+  +0      4           Block type identifier (ASCII)
+  +4      4           Block data length L (big-endian uint32)
+  +8      L           Block data
+```
+
+---
+
+## JSON Metadata
+
+The metadata is a UTF-8 encoded JSON object. Required fields for v2 files:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `format_version` | integer | Format version. MUST be `2` for files with extension blocks. |
+| `image_length` or `media_length` | integer | Byte length of the media payload. Required to locate extension blocks. |
+
+Optional fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `poseidon_hash` | string | Poseidon hash of the media content (BN254 field) |
+| `tx_hash` | string | Blockchain transaction hash |
+| `block_number` | integer | Block number of the registration transaction |
+| `wallet` | string | Creator's wallet address |
+| `latitude` | number | GPS latitude at capture time |
+| `longitude` | number | GPS longitude at capture time |
+| `timestamp` | string | ISO 8601 capture timestamp |
+| `session_id` | string | Unique session identifier |
+| `starknet_network` | string | Blockchain network (`mainnet` or `sepolia`) |
+| `version` | string | Application version that created the file |
+| `verification_method` | string | Verification method used (e.g., `poseidon_lsb_watermark`) |
+| `mime` | string | MIME type of the embedded media payload |
+
+### Example
+
+```json
+{
+  "format_version": 2,
+  "image_length": 3145728,
+  "poseidon_hash": "16609302302658229514986934480202291780178107023053511680319977605648105652992",
+  "tx_hash": "0x1abe0fcea5367d0d9bdbb6c1eda0c2ddb7e9fd750b480c59d8fd035e0b066b1",
+  "wallet": "0x1180bb3342105759ac4788afa2aafa33392aecac513dfb31a9bf455983c664d",
+  "latitude": 18.4588,
+  "longitude": -77.9435,
+  "timestamp": "2026-05-09T15:00:00Z",
+  "session_id": "abc123",
+  "starknet_network": "mainnet",
+  "version": "1.6.0",
+  "verification_method": "poseidon_lsb_watermark",
+  "mime": "image/png"
 }
-
-// Read version
-const view = new DataView(buffer)
-const version = view.getUint32(4, false) // big-endian
-
-// Read metadata length
-const metadataLength = view.getUint32(36, false)
-
-// Extract metadata
-const metadataBytes = buffer.slice(40, 40 + metadataLength)
-const metadata = JSON.parse(new TextDecoder().decode(metadataBytes))
-
-// Extract image
-const imageData = buffer.slice(40 + metadataLength)
 ```
+
+---
+
+## Extension Blocks
+
+Extension blocks provide a typed, forward-compatible mechanism for embedding additional data after the media payload.
+
+### Defined Block Types
+
+| Type (ASCII) | Hex | Description |
+|--------------|-----|-------------|
+| `C2PA` | `43 32 50 41` | C2PA JUMBF manifest store |
+| `ZKPF` | `5A 4B 50 46` | Zero-knowledge proof data (reserved) |
+| `WMRK` | `57 4D 52 4B` | Watermark parameters (reserved) |
+
+Readers MUST ignore block types they do not recognize.
+
+### C2PA Block
+
+The `C2PA` extension block contains a complete JUMBF manifest store as defined by the C2PA specification. No additional framing or transformation is applied — the block data is byte-for-byte identical to what would be embedded in a JPEG or PNG file.
+
+---
+
+## Reading a .facti File
+
+```
+1. Read 4 bytes → verify magic
+2. Read 4 bytes → metadata length N (big-endian)
+3. Read N bytes → parse JSON metadata
+4. Read M bytes → media payload (M = metadata.image_length or metadata.media_length)
+5. If format_version >= 2:
+   a. Read 2 bytes → block count (big-endian)
+   b. For each block:
+      - Read 4 bytes → block type
+      - Read 4 bytes → block data length L (big-endian)
+      - Read L bytes → block data
+```
+
+### v1 Compatibility
+
+v1 readers that do not check `format_version` will read the metadata and then treat all remaining bytes as the media payload. Since JPEG and PNG decoders stop at their respective end markers (FFD9 for JPEG, IEND for PNG), the trailing extension block bytes are ignored by image decoders.
+
+---
+
+## Writing a .facti File
+
+```
+1. Serialize JSON metadata (include format_version: 2 and image_length/media_length)
+2. Write magic bytes (4 bytes)
+3. Write metadata length as big-endian uint32 (4 bytes)
+4. Write JSON metadata
+5. Write media payload
+6. Write extension block count as big-endian uint16 (2 bytes)
+7. For each block:
+   a. Write block type (4 ASCII bytes)
+   b. Write block data length as big-endian uint32 (4 bytes)
+   c. Write block data
+```
+
+---
+
+## Security Considerations
+
+- The JSON metadata is not encrypted in v2. Sensitive data should be stored on-chain rather than in the file.
+- The C2PA manifest provides cryptographic binding between the file content and its provenance assertions.
+- The Poseidon hash enables zero-knowledge verification of content integrity without revealing the content.
+- The steganographic watermark survives format conversion and screenshots.
 
 ---
 
 ## Contact
 
-For more information or integration support, contact:
-
-- **Website**: [blockfact.io](https://blockfact.io)
-- **Email**: support@blockfact.io
-- **GitHub**: [github.com/BlockFact](https://github.com/BlockFact)
+- **Website**: https://blockfact.io
+- **Email**: egbert@blockfact.io
+- **GitHub**: https://github.com/BlockFact
 
 ---
 
 ## Changelog
 
-### v1.4 (Current Revision - January 23, 2025)
-- Updated version number to 1.4 to reflect finalized changes
-- Confirmed removal of metadata from media type parameters
-- Clarified IANA parameters vs. internal format fields
-- Adjusted encryption and interoperability sections for clarity
+### v2.0 (May 11, 2026)
+- Complete rewrite to reflect production format
+- Added extension block system (C2PA, ZKPF, WMRK)
+- Updated magic bytes (`0x41` replaces `0x01` in third byte)
+- Removed encryption/reserved fields from header (simplified to metadata length only)
+- Added .facta and .factv format variants
+- Documented C2PA JUMBF embedding
+- Added v1 backward compatibility notes
 
-### v1.3 (January 23, 2025)
-- Removed metadata from media type parameters (moved to internal file structure)
-- Clarified distinction between IANA parameters and internal format fields
-- Updated encryption guidelines for metadata security
-- Improved interoperability section for Lite vs. Full systems
-
-### v1.2
-- Added detailed encryption guidelines for metadata (symmetric/asymmetric)
-- Clarified storing IV or encryption parameters
-- Emphasized privacy and expanded references to key management systems
-
-### v1.1
-- Documented usage examples
-- Introduced lite vs. full parsing approaches
-
-### v1.0 (Initial Release - January 16, 2025)
-- Introduced 4-byte magic number `0xFA 0x49 0x01 0x00`
-- Defined core metadata fields (`content-type`, `version`, `blockchain-id`, `checksum`, `encryption-key`)
+### v1.4 (January 23, 2025)
+- Initial public specification
 
 ---
 
-**Copyright © 2025 BlockFact. All rights reserved.**
+**Copyright © 2025-2026 BlockFact Technologies Inc. All rights reserved.**
